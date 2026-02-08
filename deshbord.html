@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PHREG – Main Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617;
+      color: #e5e7eb;
+      display: flex;
+      min-height: 100vh;
+    }
+    .sidebar {
+      width: 220px;
+      background: #020617;
+      border-right: 1px solid #1f2937;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 12px;
+    }
+    .sidebar h1 { font-size: 1.1rem; margin: 0 0 4px 0; }
+    .sidebar .tagline {
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-bottom: 16px;
+    }
+    .nav-link {
+      display: block;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+      color: #d1d5db;
+      text-decoration: none;
+    }
+    .nav-link.active { background: #1d4ed8; color: #f9fafb; font-weight: 600; }
+    .nav-link:hover { background: #111827; }
+    .sidebar-footer { margin-top: auto; font-size: 0.75rem; color: #6b7280; }
+    .sidebar-footer a { color: #60a5fa; text-decoration: none; }
+
+    .main { flex: 1; display: flex; flex-direction: column; background: radial-gradient(circle at top left, #0f172a, #020617); }
+    .topbar {
+      padding: 10px 20px;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #020617aa;
+      backdrop-filter: blur(6px);
+    }
+    .topbar-title { font-size: 1rem; font-weight: 600; }
+    .topbar-sub { font-size: 0.8rem; color: #9ca3af; }
+
+    .status-chip {
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-align: center;
+    }
+    .chip-ok { background: #166534; color: #bbf7d0; }
+    .chip-bad { background: #7f1d1d; color: #fecaca; }
+
+    .last-update { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; text-align: right; }
+
+    .content {
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .reactor-card {
+      background: #020617;
+      border-radius: 14px;
+      border: 1px solid #1f2937;
+      padding: 12px 12px 10px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .reactor-head { display: flex; justify-content: space-between; align-items: center; }
+    .reactor-title { font-size: 0.9rem; font-weight: 700; }
+
+    .reactor-controls { display: flex; align-items: center; gap: 10px; }
+
+    /* Toggle switch */
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .switch input { display: none; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #374151;
+      transition: 0.2s;
+      border-radius: 999px;
+      border: 1px solid #1f2937;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 2px;
+      background-color: #e5e7eb;
+      transition: 0.2s;
+      border-radius: 999px;
+    }
+    input:checked + .slider { background-color: #16a34a; }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .metric {
+      border: 1px solid #111827;
+      border-radius: 12px;
+      padding: 10px;
+      background: #010814;
+    }
+    .metric h2 {
+      margin: 0;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .value { font-size: 1.6rem; font-weight: 750; margin-top: 4px; }
+    .subtext { font-size: 0.75rem; color: #6b7280; }
+
+    .setpoint-form { display: flex; gap: 8px; align-items: center; }
+    .setpoint-form input {
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      width: 90px;
+      font-size: 0.85rem;
+    }
+    .setpoint-form button {
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: none;
+      font-size: 0.85rem;
+      background: #2563eb;
+      color: #f9fafb;
+      cursor: pointer;
+    }
+    .setpoint-form button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .setpoint-status { font-size: 0.75rem; color: #9ca3af; min-height: 1em; }
+
+    .footer {
+      padding: 6px 20px 10px;
+      font-size: 0.75rem;
+      color: #6b7280;
+      border-top: 1px solid #111827;
+    }
+
+    @media (max-width: 1000px) {
+      body { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        border-right: none;
+        border-bottom: 1px solid #1f2937;
+      }
+      .sidebar-footer { display: none; }
+      .content { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 650px) {
+      .content { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div>
+      <h1>PHREG SCADA</h1>
+      <div class="tagline">3× Bioreactors – pH / DO / Air / CO₂</div>
+      <a href="/" class="nav-link active">Dashboard</a>
+      <a href="/trends" class="nav-link">Trends</a>
+      <a href="/alarms" class="nav-link">Alarms</a>
+    </div>
+    <div class="sidebar-footer">
+      Logged in as <strong>PHREG</strong><br>
+      <a href="/logout">Logout</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar-title">All Bioreactors Overview</div>
+        <div class="topbar-sub">Live values (3 reactors)</div>
+      </div>
+      <div>
+        <div id="overall-chip" class="status-chip chip-bad">NO DATA</div>
+        <div id="last-update" class="last-update">Last update: --</div>
+      </div>
+    </header>
+
+    <section class="content" id="reactors"></section>
+
+    <footer class="footer">
+      <span>Status: </span><span id="status-text">Waiting for data…</span>
+    </footer>
+  </main>
+
+  <script>
+    const statusText = document.getElementById("status-text");
+    const overallChip = document.getElementById("overall-chip");
+    const lastUpdateEl = document.getElementById("last-update");
+    const reactorsEl = document.getElementById("reactors");
+
+    function fmt(v, digits=2) {
+      const n = Number(v);
+      return Number.isFinite(n) ? n.toFixed(digits) : "--";
+    }
+
+    function reactorHtml(r) {
+      const rid = r.id ?? "?";
+      const enabled = (r.enabled !== false);
+      const sp = Number(r.sp_ph);
+      const spText = Number.isFinite(sp) ? sp.toFixed(2) : "--";
+
+      return `
+        <article class="reactor-card" data-rid="${rid}">
+          <div class="reactor-head">
+            <div class="reactor-title">Bioreactor ${rid}</div>
+            <div class="reactor-controls">
+              <div class="subtext" style="margin:0;">Enabled</div>
+              <label class="switch" title="Enable/Disable this bioreactor">
+                <input type="checkbox" id="en-${rid}" ${enabled ? "checked" : ""} onchange="return sendEnable(${rid});">
+                <span class="slider"></span>
+              </label>
+              <div class="status-chip chip-bad" id="chip-${rid}">--</div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="metric">
+              <h2>pH</h2>
+              <div class="value" id="ph-${rid}">${fmt(r.ph)}</div>
+              <div class="subtext" id="phwin-${rid}">Target: ${spText} (±0.50)</div>
+            </div>
+
+            <div class="metric">
+              <h2>DO</h2>
+              <div class="value" id="do-${rid}">${fmt(r.do)}</div>
+              <div class="subtext">mg/L</div>
+            </div>
+
+            <div class="metric">
+              <h2>Airflow</h2>
+              <div class="value" id="air-${rid}">${fmt(r.air)}</div>
+              <div class="subtext">(MFC)</div>
+            </div>
+
+            <div class="metric">
+              <h2>CO₂</h2>
+              <div class="value" id="co2-${rid}">${fmt(r.co2)}</div>
+              <div class="subtext">(MFC)</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="subtext" style="margin-bottom:6px;">pH setpoint for Bioreactor ${rid}</div>
+            <form class="setpoint-form" onsubmit="return sendSetpoint(event, ${rid});">
+              <input type="number" step="0.01" id="sp-input-${rid}" placeholder="${spText}" ${enabled ? "" : "disabled"}>
+              <button type="submit" id="sp-btn-${rid}" ${enabled ? "" : "disabled"}>Update</button>
+            </form>
+            <div class="setpoint-status" id="sp-status-${rid}"></div>
+          </div>
+        </article>
+      `;
+    }
+
+    function updateReactorChip(r) {
+      const rid = r.id;
+      const chip = document.getElementById(`chip-${rid}`);
+      if (!chip) return;
+
+      if (r.enabled === false) {
+        chip.textContent = "DISABLED";
+        chip.className = "status-chip chip-bad";
+        return;
+      }
+
+      const ph = Number(r.ph);
+      const sp = Number(r.sp_ph);
+
+      let ok = true;
+      if (!Number.isFinite(ph)) ok = false;
+      if (Number.isFinite(sp) && Number.isFinite(ph)) {
+        if (ph < sp - 0.5 || ph > sp + 0.5) ok = false;
+      }
+
+      chip.textContent = ok ? "OK" : "CHECK";
+      chip.className = ok ? "status-chip chip-ok" : "status-chip chip-bad";
+    }
+
+    async function fetchData() {
+      try {
+        const resp = await fetch("/api/latest");
+        if (!resp.ok) {
+          statusText.textContent = "Waiting for data…";
+          overallChip.textContent = "NO DATA";
+          overallChip.className = "status-chip chip-bad";
+          return;
+        }
+
+        const data = await resp.json();
+        const reactors = Array.isArray(data.reactors) ? data.reactors : [];
+        const status = data.status || "OK";
+        const tstamp = data.timestamp || "--";
+
+        lastUpdateEl.textContent = "Last update: " + tstamp;
+        statusText.textContent = status;
+
+        if (reactorsEl.children.length === 0) {
+          const byId = new Map(reactors.map(r => [Number(r.id), r]));
+          const cards = [1,2,3].map(id => reactorHtml(byId.get(id) || {id})).join("");
+          reactorsEl.innerHTML = cards;
+        }
+
+        for (const r of reactors) {
+          const rid = r.id;
+          const phEl = document.getElementById(`ph-${rid}`);
+          const doEl = document.getElementById(`do-${rid}`);
+          const airEl = document.getElementById(`air-${rid}`);
+          const co2El = document.getElementById(`co2-${rid}`);
+          const winEl = document.getElementById(`phwin-${rid}`);
+          const spIn = document.getElementById(`sp-input-${rid}`);
+          const enCb = document.getElementById(`en-${rid}`);
+
+          if (phEl) phEl.textContent = fmt(r.ph);
+          if (doEl) doEl.textContent = fmt(r.do);
+          if (airEl) airEl.textContent = fmt(r.air);
+          if (co2El) co2El.textContent = fmt(r.co2);
+
+          const sp = Number(r.sp_ph);
+          if (winEl) {
+            winEl.textContent = Number.isFinite(sp)
+              ? `Target: ${sp.toFixed(2)} (±0.50)`
+              : `Target: -- (±0.50)`;
+          }
+          if (spIn && Number.isFinite(sp)) {
+            spIn.placeholder = sp.toFixed(2);
+          }
+
+          const enabled = (r.enabled !== false);
+          if (enCb) enCb.checked = enabled;
+          if (spIn) spIn.disabled = !enabled;
+          const spBtn = document.getElementById(`sp-btn-${rid}`);
+          if (spBtn) spBtn.disabled = !enabled;
+
+          updateReactorChip(r);
+        }
+
+        const anyBad = [...document.querySelectorAll(".reactor-card .status-chip")]
+          .some(el => el.textContent === "CHECK");
+
+        const allOk = !anyBad && (String(status).toUpperCase() === "RUN");
+        overallChip.textContent = allOk ? "ALL GOOD" : "CHECK SYSTEM";
+        overallChip.className = allOk ? "status-chip chip-ok" : "status-chip chip-bad";
+
+      } catch (err) {
+        statusText.textContent = "Error talking to server";
+        overallChip.textContent = "ERROR";
+        overallChip.className = "status-chip chip-bad";
+      }
+    }
+
+    async function sendEnable(rid) {
+      const enCb = document.getElementById(`en-${rid}`);
+      const msg = document.getElementById(`sp-status-${rid}`);
+      const enabled = !!enCb?.checked;
+
+      if (msg) msg.textContent = enabled ? "Enabling..." : "Disabling...";
+
+      try {
+        const resp = await fetch("/api/reactor_enable", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rid: rid, enabled: enabled })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          if (msg) msg.textContent = "Error: " + (data.error || "unknown");
+          if (enCb) enCb.checked = !enabled; // revert
+          return false;
+        }
+        if (msg) msg.textContent = `R${data.rid} is now ${data.enabled ? "ENABLED" : "DISABLED"}`;
+      } catch (e) {
+        if (msg) msg.textContent = "Failed to update enable state.";
+        if (enCb) enCb.checked = !enabled; // revert
+      }
+      return false;
+    }
+
+    async function sendSetpoint(event, rid) {
+      event.preventDefault();
+      const input = document.getElementById(`sp-input-${rid}`);
+      const btn = document.getElementById(`sp-btn-${rid}`);
+      const msg = document.getElementById(`sp-status-${rid}`);
+
+      const val = (input?.value || "").trim();
+      if (!val) { if (msg) msg.textContent = "Please enter a value."; return false; }
+
+      const num = parseFloat(val);
+      if (!Number.isFinite(num)) { if (msg) msg.textContent = "Invalid number."; return false; }
+
+      if (btn) btn.disabled = true;
+      if (msg) msg.textContent = "Sending...";
+
+      try {
+        const resp = await fetch("/api/setpoint", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rid: rid, sp_ph: num })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          if (msg) msg.textContent = "Error: " + (data.error || "unknown");
+        } else {
+          if (msg) msg.textContent = `Setpoint updated (R${data.rid}): ${Number(data.sp_ph).toFixed(2)}`;
+          if (input) input.value = "";
+        }
+      } catch (err) {
+        if (msg) msg.textContent = "Failed to send setpoint.";
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+      return false;
+    }
+
+    fetchData();
+    setInterval(fetchData, 2000);
+  </script>
+</body>
+</html>
